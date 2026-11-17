@@ -1,0 +1,36 @@
+{
+  "name": "ny-subway",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "test": "tsx --test tests/*.test.ts",
+    "map:build": "tsx scripts/build-station-map.ts",
+    "schema:build": "tsx scripts/build-gtfs-schema.ts",
+    "typecheck": "tsc --noEmit",
+    "gtfs:refresh": "tsx scripts/refresh-gtfs.ts"
+  },
+  "dependencies": {
+    "d3-geo": "3.1.2",
+    "dialkit": "^2.2.1",
+    "motion": "^14.14.0",
+    "next": "16.4.6",
+    "protobufjs": "^8.8.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "csv-parse": "^7.0.3",
+    "fflate": "^0.8.3",
+    "prettier": "^3.6.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "packageManager": "pnpm@11.25.0"
+}
