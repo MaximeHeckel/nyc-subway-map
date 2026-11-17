@@ -6,7 +6,7 @@ type Gesture = { center: Point; distance: number } | { point: Point };
 export function bindGestures(
   canvas: HTMLCanvasElement,
   camera: MapViewport,
-  draw: () => void,
+  requestRender: () => void,
   onZoomChange: (zoom: number) => void,
 ) {
   const controller = new AbortController();
@@ -25,7 +25,7 @@ export function bindGestures(
   function setZoom(value: number, x: number, y: number) {
     camera.setZoom(value, x, y);
     onZoomChange(camera.view.zoom);
-    draw();
+    requestRender();
   }
 
   const pointers = new Map<number, Point>();
@@ -87,12 +87,12 @@ export function bindGestures(
         center[0] - gesture.center[0],
         center[1] - gesture.center[1],
       );
-      draw();
+      requestRender();
     } else if (points.length === 1 && gesture && "point" in gesture) {
       const dx = points[0][0] - gesture.point[0];
       const dy = points[0][1] - gesture.point[1];
       camera.panBy(dx, dy);
-      draw();
+      requestRender();
     }
     beginGesture();
   });

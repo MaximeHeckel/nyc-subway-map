@@ -2,6 +2,9 @@ import { FONT_SCALE } from "../constants";
 import { appendSegment, glyphFont, strokeWidth } from "./glyphs";
 import { pixelRatio } from "./utils";
 
+const MAX_CACHED_GLYPHS = 256;
+const HEAD_SIZE_STEP = 0.25;
+
 export function createGlyphCache() {
   const lightSprites = new Map<
     string,
@@ -21,50 +24,65 @@ export function createGlyphCache() {
     const intensity = glowIntensity;
     const dpr = pixelRatio();
     const resolution = Math.min(3, dpr * Math.ceil(zoom));
-    const settings = `${scale}:${resolution}:${intensity}:${minimumHeadSize}`;
+    const settings = `${scale}:${intensity}`;
 
     if (settings !== spriteSettings) {
       lightSprites.clear();
       spriteSettings = settings;
     }
 
-    const key = `${char}:${color}:${head}`;
+    const baseSize = scale * FONT_SCALE;
+    // Only bucket the minimum-size override. Once the natural glyph is larger,
+    // changing zoom no longer changes its geometry or invalidates other sprites.
+    const fontSize =
+      head && minimumHeadSize > baseSize
+        ? Math.ceil(minimumHeadSize / HEAD_SIZE_STEP) * HEAD_SIZE_STEP
+        : baseSize;
+    const key = `${char}:${color}:${head}:${fontSize}:${resolution}`;
     let sprite = lightSprites.get(key);
 
-    if (!sprite) {
-      const fontSize = Math.max(scale * FONT_SCALE, head ? minimumHeadSize : 0);
-      const blur = 8 * intensity;
-      const size = Math.ceil(fontSize * 2 + blur * 6 + 4);
-      function renderGlyph(shadowBlur: number) {
-        const image = document.createElement("canvas");
-        image.width = image.height = Math.ceil(size * resolution);
+    if (sprite) {
+      // Keep recently used zoom buckets so reversing a gesture can reuse them.
+      lightSprites.delete(key);
+      lightSprites.set(key, sprite);
+      return sprite;
+    }
 
-        const brush = image.getContext("2d")!;
-        brush.scale(resolution, resolution);
-        brush.textAlign = "center";
-        brush.textBaseline = "middle";
-        brush.font = glyphFont(fontSize);
-        brush.fillStyle = brush.strokeStyle = color;
-        brush.shadowColor = color;
-        brush.shadowBlur = shadowBlur * resolution;
-        brush.lineWidth = strokeWidth(fontSize);
-        brush.lineCap = "butt";
+    const blur = 8 * intensity;
+    const size = Math.ceil(fontSize * 2 + blur * 6 + 4);
+    function renderGlyph(shadowBlur: number) {
+      const image = document.createElement("canvas");
+      image.width = image.height = Math.ceil(size * resolution);
 
-        if (head) {
-          brush.fillText(char, size / 2, size / 2);
-        } else {
-          brush.beginPath();
-          appendSegment(brush, char, size / 2, size / 2, fontSize);
-          brush.stroke();
-        }
+      const brush = image.getContext("2d")!;
+      brush.scale(resolution, resolution);
+      brush.textAlign = "center";
+      brush.textBaseline = "middle";
+      brush.font = glyphFont(fontSize);
+      brush.fillStyle = brush.strokeStyle = color;
+      brush.shadowColor = color;
+      brush.shadowBlur = shadowBlur * resolution;
+      brush.lineWidth = strokeWidth(fontSize);
+      brush.lineCap = "butt";
 
-        return image;
+      if (head) {
+        brush.fillText(char, size / 2, size / 2);
+      } else {
+        brush.beginPath();
+        appendSegment(brush, char, size / 2, size / 2, fontSize);
+        brush.stroke();
       }
 
-      const image = renderGlyph(blur);
-      const emission = renderGlyph(0);
-      sprite = { image, emission, size };
-      lightSprites.set(key, sprite);
+      return image;
+    }
+
+    const image = renderGlyph(blur);
+    const emission = renderGlyph(0);
+    sprite = { image, emission, size };
+    lightSprites.set(key, sprite);
+
+    if (lightSprites.size > MAX_CACHED_GLYPHS) {
+      lightSprites.delete(lightSprites.keys().next().value!);
     }
 
     return sprite;

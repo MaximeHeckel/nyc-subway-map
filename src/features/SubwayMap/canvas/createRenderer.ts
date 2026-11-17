@@ -1,11 +1,12 @@
 import type { Point, RealtimeSnapshot } from "@/types/transit";
 import type { SubwayOptions } from "../types";
-import { CELL_SIZE, DEFAULT_OPTIONS, MAX_FRAME_DELTA } from "../constants";
+import { CELL_SIZE, DEFAULT_OPTIONS } from "../constants";
 import { createSubwayModel } from "../model/createSubwayModel";
 import { getTrainGlyphs } from "../model/trainGlyphs";
 import { createBloom } from "./effects/createBloom";
 import { createCrtSurface } from "./effects/createCrtSurface";
 import { createAsciiBackdrop } from "./createAsciiBackdrop";
+import { createFrameScheduler } from "./createFrameScheduler";
 import { createGlyphCache } from "./createGlyphCache";
 import { createTrackLayer } from "./createTrackLayer";
 import { createViewport } from "./createViewport";
@@ -29,9 +30,7 @@ export function createSubwayRenderer(
   const bloom = createBloom();
   const asciiBackdrop = createAsciiBackdrop();
 
-  let animationFrame = 0;
   let time = 0;
-  let last = 0;
   let liveSnapshot: Partial<RealtimeSnapshot> = {};
   let liveReceivedAt = 0;
 
@@ -46,7 +45,7 @@ export function createSubwayRenderer(
 
     camera.fit(width, height, model.routes);
     crtSurface.resize(width, height);
-    draw();
+    scheduler.requestRender();
   }
 
   function drawTrainGlyph(
@@ -168,31 +167,31 @@ export function createSubwayRenderer(
     }
   }
 
-  function frame(timestamp: number) {
-    const delta = Math.min((timestamp - last) / 1000, MAX_FRAME_DELTA);
-    last = timestamp;
-
+  const scheduler = createFrameScheduler((delta) => {
     if (options.playing) {
       time += delta;
 
       if (options.dataMode === "simulation") {
         model.advance(delta, options.speed);
       }
-
-      draw();
     }
 
-    animationFrame = requestAnimationFrame(frame);
-  }
+    draw();
+  });
 
-  const unbindGestures = bindGestures(canvas, camera, draw, onZoomChange);
+  const unbindGestures = bindGestures(
+    canvas,
+    camera,
+    scheduler.requestRender,
+    onZoomChange,
+  );
 
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   resize();
   camera.setZoom(options.zoom);
-  draw();
-  animationFrame = requestAnimationFrame(frame);
+  scheduler.setAnimating(options.playing);
+  scheduler.requestRender();
 
   return {
     setOptions(next: Partial<SubwayOptions>) {
@@ -214,19 +213,20 @@ export function createSubwayRenderer(
         camera.setZoom(next.zoom);
       }
 
-      draw();
+      scheduler.setAnimating(options.playing);
+      scheduler.requestRender();
     },
     setLiveData(snapshot: RealtimeSnapshot) {
       liveSnapshot = snapshot;
       liveReceivedAt = performance.now();
       const coverage = model.setLiveTrains(snapshot.trains);
 
-      draw();
+      scheduler.requestRender();
 
       return coverage;
     },
     destroy() {
-      cancelAnimationFrame(animationFrame);
+      scheduler.destroy();
       observer.disconnect();
       unbindGestures();
 
