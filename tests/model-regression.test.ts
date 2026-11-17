@@ -1,3 +1,4 @@
+import { routeOrder } from "../src/data/routes";
 import { getTrainGlyphs } from "../src/features/SubwayMap/model/trainGlyphs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -42,7 +43,10 @@ const baselines = {
 for (const layout of ["orthogonal"] as const) {
   for (const route of ["all", "A", "SIR"] as const) {
     test(`${layout}/${route} preserves the original map and train placements`, () => {
-      const model = createSubwayModel(layout, route);
+      const model = createSubwayModel(
+        layout,
+        route === "all" ? routeOrder : [route],
+      );
       const coverage = model.setLiveTrains(trains);
       const state = {
         routes: model.routes.map((route) => ({
@@ -69,7 +73,7 @@ for (const layout of ["orthogonal"] as const) {
 }
 
 test("geographic routes retain a fine, continuous eight-direction grid", () => {
-  const model = createSubwayModel("geographic", "all");
+  const model = createSubwayModel("geographic", routeOrder);
 
   // The coarse map had 1,057 cells: nearby corridors need more room than that.
   assert.ok(model.cells.length > 2500);
@@ -100,7 +104,7 @@ test("geographic routes retain a fine, continuous eight-direction grid", () => {
 });
 
 test("geographic trains remain on their service's character paths in both directions", () => {
-  const model = createSubwayModel("geographic", "all");
+  const model = createSubwayModel("geographic", routeOrder);
 
   for (const direction of ["N", "S"] as const) {
     const coverage = model.setLiveTrains(
@@ -125,11 +129,11 @@ test("geographic trains remain on their service's character paths in both direct
 });
 
 test("layout changes remap retained trains onto the new character paths", () => {
-  const model = createSubwayModel("orthogonal", "all");
+  const model = createSubwayModel("orthogonal", routeOrder);
   model.setLiveTrains(trains);
-  model.setLayout("geographic", "A");
+  model.setLayout("geographic", ["A"]);
 
-  const fresh = createSubwayModel("geographic", "A");
+  const fresh = createSubwayModel("geographic", ["A"]);
   fresh.setLiveTrains(trains);
 
   assert.deepEqual(model.routes, fresh.routes);
@@ -137,7 +141,7 @@ test("layout changes remap retained trains onto the new character paths", () => 
 });
 
 test("camera keeps the cursor anchor stable and bounds pan and zoom", () => {
-  const model = createSubwayModel("orthogonal", "all");
+  const model = createSubwayModel("orthogonal", routeOrder);
   const camera = createViewport();
   camera.fit(1600, 900, model.routes);
   camera.setZoom(3, 600, 300);
@@ -178,7 +182,7 @@ test("two-character trains fold tails at termini without duplicating the head", 
 });
 
 test("simulation reverses at endpoints without leaving its path", () => {
-  const model = createSubwayModel("orthogonal", "all");
+  const model = createSubwayModel("orthogonal", routeOrder);
   model.advance(10000, 3);
 
   for (const route of model.routes) {
@@ -188,3 +192,42 @@ test("simulation reverses at endpoints without leaving its path", () => {
     }
   }
 });
+
+for (const layout of ["orthogonal", "geographic"] as const) {
+  test(`${layout} filters multiple services and restores all without rebuilding on equivalent selections`, () => {
+    const model = createSubwayModel(layout, routeOrder);
+    const allCells = model.cells;
+    const paths = model.routes.map((route) => route.paths);
+    model.setLiveTrains(trains);
+    model.setLayout(layout, ["A", "C"]);
+
+    assert.deepEqual(
+      model.activeRoutes.map((route) => route.id),
+      ["A", "C"],
+    );
+    const selectedCells = new Set(
+      model.activeRoutes.flatMap((route) =>
+        [...route.characterPaths.values()].flatMap((path) =>
+          path.map((point) => point.join(",")),
+        ),
+      ),
+    );
+    assert.deepEqual(model.occupiedCells, selectedCells);
+    assert.ok(model.activeRoutes.every((route) => route.liveTrains.length > 0));
+
+    const revision = model.revision;
+    model.setLayout(layout, ["C", "A", "A"]);
+    assert.equal(model.revision, revision);
+    assert.deepEqual(
+      model.routes.map((route) => route.paths),
+      paths,
+    );
+
+    model.setLayout(layout, []);
+    assert.equal(model.activeRoutes.length, 0);
+    assert.equal(model.cells.length, 0);
+
+    model.setLayout(layout, routeOrder);
+    assert.deepEqual(model.cells, allCells);
+  });
+}

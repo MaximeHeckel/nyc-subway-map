@@ -1,8 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useDialKitController, type DialConfig } from "dialkit";
-import { routeOrder } from "@/data/routes";
 import type { SubwayOptions } from "../types";
-import { DEFAULT_OPTIONS, MIN_ZOOM, MAX_ZOOM } from "../constants";
+import {
+  DEFAULT_OPTIONS,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  CONTROL_PANEL_ID,
+} from "../constants";
 
 const controlConfig = {
   data: {
@@ -20,11 +24,6 @@ const controlConfig = {
       { label: "Schematic", value: "orthogonal" },
       { label: "Geographic", value: "geographic" },
     ],
-  },
-  route: {
-    type: "select",
-    default: DEFAULT_OPTIONS.route,
-    options: [{ label: "All services", value: "all" }, ...routeOrder],
   },
   trainLength: {
     type: "select",
@@ -47,18 +46,19 @@ const controlConfig = {
 } satisfies DialConfig;
 
 export function useSubwayControls() {
+  const [routes, setRoutes] = useState(DEFAULT_OPTIONS.routes);
   const { values, setValues } = useDialKitController(
     "Controls",
     controlConfig,
     {
-      id: "ny-subway",
+      id: CONTROL_PANEL_ID,
     },
   );
   const controls = useMemo<SubwayOptions>(
     () => ({
       dataMode: values.data === "simulation" ? "simulation" : "live",
       layout: values.layout === "geographic" ? "geographic" : "orthogonal",
-      route: values.route,
+      routes,
       trainLength: values.trainLength === "2" ? 2 : 1,
       playing: values.playing,
       speed: values.simSpeed,
@@ -71,8 +71,8 @@ export function useSubwayControls() {
       crt: values.crt,
       crtIntensity: values.crtStrength,
     }),
-    [values],
+    [values, routes],
   );
 
-  return { controls, setControls: setValues };
+  return { controls, setControls: setValues, setRoutes };
 }

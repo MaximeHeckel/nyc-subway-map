@@ -22,7 +22,7 @@ export function createSubwayRenderer(
 ) {
   const options = { ...DEFAULT_OPTIONS, ...initialOptions };
   const ctx = canvas.getContext("2d")!;
-  const model = createSubwayModel(options.layout, options.route);
+  const model = createSubwayModel(options.layout, options.routes);
   const camera = createViewport();
   const glyphs = createGlyphCache();
   const tracks = createTrackLayer();
@@ -200,7 +200,7 @@ export function createSubwayRenderer(
       Object.assign(options, next);
 
       // Build character paths and remap trains before any resize can draw.
-      model.setLayout(options.layout, options.route);
+      model.setLayout(options.layout, options.routes);
 
       if (layoutChanged) {
         resize();

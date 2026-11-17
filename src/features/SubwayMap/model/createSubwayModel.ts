@@ -11,10 +11,10 @@ import { advanceSimulation, seedSimulation } from "./simulation";
 
 export function createSubwayModel(
   layout: SubwayOptions["layout"],
-  route: string,
+  routes: readonly string[],
 ) {
   let layoutMode = layout;
-  let selectedRoute = route;
+  let selectedRoutes = new Set(routes);
   let liveTrains: LiveTrain[] = [];
   const data = {
     routes: structuredClone(mapData.routes).map((route): Route => ({
@@ -90,9 +90,7 @@ export function createSubwayModel(
   }
 
   function getActiveRoutes() {
-    return selectedRoute === "all"
-      ? data.routes
-      : data.routes.filter((route) => route.id === selectedRoute);
+    return data.routes.filter((route) => selectedRoutes.has(route.id));
   }
 
   const phosphor = Object.fromEntries(
@@ -174,11 +172,17 @@ export function createSubwayModel(
       return asciiRevision;
     },
     phosphor,
-    setLayout(nextLayout: SubwayOptions["layout"], nextRoute: string) {
+    setLayout(
+      nextLayout: SubwayOptions["layout"],
+      nextRoutes: readonly string[],
+    ) {
       const layoutChanged = nextLayout !== layoutMode;
-      const routeChanged = nextRoute !== selectedRoute;
+      const nextSelection = new Set(nextRoutes);
+      const routeChanged =
+        nextSelection.size !== selectedRoutes.size ||
+        [...nextSelection].some((route) => !selectedRoutes.has(route));
       layoutMode = nextLayout;
-      selectedRoute = nextRoute;
+      selectedRoutes = nextSelection;
 
       if (layoutChanged) {
         rebuildRoutes();

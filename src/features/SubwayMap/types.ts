@@ -3,7 +3,7 @@ import type { LiveTrain, RoutePath, Point } from "@/types/transit";
 export interface SubwayOptions {
   dataMode: "live" | "simulation";
   layout: "orthogonal" | "geographic";
-  route: string;
+  routes: readonly string[];
   speed: number;
   trainLength: 1 | 2;
   glow: boolean;

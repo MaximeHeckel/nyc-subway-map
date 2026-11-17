@@ -1,5 +1,5 @@
+import { MapControls } from "./MapControls";
 import { useState } from "react";
-import { DialRoot } from "dialkit";
 import { useSubwayControls } from "./hooks/useSubwayControls";
 import { useSubwayRenderer } from "./hooks/useSubwayRenderer";
 import { useRealtimeTrains } from "./hooks/useRealtimeTrains";
@@ -7,7 +7,7 @@ import styles from "./SubwayMap.module.css";
 
 export default function SubwayMap() {
   const [controlsOpen, setControlsOpen] = useState(true);
-  const { controls, setControls } = useSubwayControls();
+  const { controls, setControls, setRoutes } = useSubwayControls();
   const { canvasRef, receiveSnapshot } = useSubwayRenderer(
     controls,
     setControls,
@@ -54,12 +54,7 @@ export default function SubwayMap() {
           </svg>
         </button>
         <div id="subway-controls-content" hidden={!controlsOpen}>
-          <DialRoot
-            mode="inline"
-            theme="dark"
-            versions="menu"
-            productionEnabled
-          />
+          <MapControls routes={controls.routes} onRoutesChange={setRoutes} />
           <dl className={styles.trainInfo} aria-label="Train count">
             <div>
               <dt>Trains</dt>

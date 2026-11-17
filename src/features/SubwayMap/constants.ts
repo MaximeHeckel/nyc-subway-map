@@ -1,9 +1,10 @@
+import { routeOrder } from "@/data/routes";
 import type { SubwayOptions } from "./types";
 
 export const DEFAULT_OPTIONS: SubwayOptions = {
   dataMode: "live",
   layout: "orthogonal",
-  route: "all",
+  routes: routeOrder,
   speed: 1,
   trainLength: 1,
   glow: true,
@@ -16,6 +17,8 @@ export const DEFAULT_OPTIONS: SubwayOptions = {
   playing: true,
   zoom: 1,
 };
+
+export const CONTROL_PANEL_ID = "ny-subway";
 
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 5;

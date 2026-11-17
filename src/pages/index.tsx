@@ -6,10 +6,8 @@ export default function Home() {
     <>
       <Head>
         <title>NY Subway — ASCII transit map</title>
-        <meta
-          name="description"
-          content="A colored ASCII subway map with simulated trains and CRT effects."
-        />
+        <meta name="description" content="A live NYC subway map." />
+        <meta property="og:description" content="A live NYC subway map." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <SubwayMap />

@@ -1,0 +1,119 @@
+.root {
+  position: relative;
+  font-size: 13px;
+  color: var(--dial-text-label);
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--dial-row-height);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--dial-radius);
+  background: var(--dial-surface);
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--dial-surface-hover);
+}
+
+.trigger > svg {
+  flex-shrink: 0;
+}
+
+.summary {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  color: var(--dial-text-label);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: min(320px, 50dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #ffffff16;
+  border-radius: 12px;
+  background: #28282a;
+  box-shadow: 0 8px 24px #0006;
+}
+
+.option,
+.all {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.all {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #28282a;
+  border-bottom: 1px solid #ffffff16;
+}
+
+.option:hover,
+.all:hover {
+  background: #373739;
+}
+
+.check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1px solid #777;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.check[data-checked="true"] {
+  border-color: #d3d3d8;
+  background: #d3d3d8;
+  color: #28282a;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid #d3d3d8;
+  outline-offset: 2px;
+}
+
+.option:focus-visible,
+.all:focus-visible {
+  outline: 2px solid #d3d3d8;
+  outline-offset: -2px;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
