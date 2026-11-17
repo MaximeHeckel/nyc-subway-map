@@ -44,7 +44,7 @@ const controlConfig = {
   bloomIntensity: [1.5, 0, 3, 0.1],
   trackBloom: [0.35, 0, 1, 0.05],
   crt: true as boolean,
-  crtStrength: [0.55, 0, 1.5, 0.05],
+  crtStrength: [0.25, 0, 1.5, 0.05],
 } satisfies DialConfig;
 
 export default function SubwayMap() {

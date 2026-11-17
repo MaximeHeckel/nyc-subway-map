@@ -5,6 +5,7 @@ export function createCrtSurface() {
   const scanlines = document.createElement("canvas");
   const band = document.createElement("canvas");
   const pitch = 4;
+  const referenceZoom = 5;
   band.width = 1;
   band.height = 256;
   const bandBrush = band.getContext("2d")!;
@@ -22,7 +23,7 @@ export function createCrtSurface() {
     if (w === width && h === height) return;
     width = w;
     height = h;
-    // CSS-pixel textures keep their pitch through map zoom and bound cache memory.
+    // The phosphor mask and glass stay in screen space.
     mask.width = glass.width = Math.max(1, Math.ceil(w));
     mask.height = glass.height = Math.max(1, Math.ceil(h));
     const texture = mask.getContext("2d")!;
@@ -49,9 +50,10 @@ export function createCrtSurface() {
     texture.fillStyle = texture.createPattern(tile, "repeat")!;
     texture.fillRect(0, 0, w, h);
 
-    // One extra period keeps the moving scanlines seamless at both screen edges.
+    // Cover the viewport even when compressed to 1/referenceZoom at minimum zoom.
+    // One extra period keeps the moving strip seamless at both edges.
     scanlines.width = 1;
-    scanlines.height = Math.ceil(h) + pitch;
+    scanlines.height = Math.ceil(h * referenceZoom) + pitch;
     const lines = scanlines.getContext("2d")!;
     const lineTile = document.createElement("canvas");
     lineTile.width = 1;
@@ -129,21 +131,40 @@ export function createCrtSurface() {
     ctx.globalAlpha = Math.min(1, opacity);
     ctx.globalCompositeOperation = blend;
     ctx.shadowBlur = 0;
+    if (image === scanlines) {
+      // Average the fine raster when it becomes smaller than a screen pixel.
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+    }
     ctx.drawImage(image, 0, offsetY, width, drawHeight);
     ctx.restore();
   }
 
   return {
     resize,
-    mask(ctx: CanvasRenderingContext2D, opacity: number, seconds: number) {
+    mask(
+      ctx: CanvasRenderingContext2D,
+      opacity: number,
+      seconds: number,
+      zoom: number,
+    ) {
       paint(ctx, mask, opacity);
       const bandHeight = height * 0.22;
-      const bandY =
-        height - ((seconds / 12 + 0.3) % 1) * (height + bandHeight);
+      const bandY = height - ((seconds / 12 + 0.3) % 1) * (height + bandHeight);
       paint(ctx, band, opacity * 0.12, bandY, bandHeight, "screen");
       // Move the fine raster independently of the phosphor grid and broad band.
-      const offset = -((seconds * 4) % pitch);
-      paint(ctx, scanlines, opacity, offset, scanlines.height);
+      const rasterPitch =
+        1.5 + ((zoom - 1) / (referenceZoom - 1)) * (pitch - 1.5);
+      const rasterScale = rasterPitch / pitch;
+      const offset = -((seconds * 8) % pitch) * rasterScale;
+      // Give the fine raster more contrast at low overall CRT strength.
+      paint(
+        ctx,
+        scanlines,
+        opacity * 2,
+        offset,
+        scanlines.height * rasterScale,
+      );
     },
     glass: (ctx: CanvasRenderingContext2D, opacity: number) =>
       paint(ctx, glass, opacity),

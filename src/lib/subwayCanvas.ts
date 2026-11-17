@@ -70,7 +70,7 @@ export function mountSubway(
     bloomIntensity: 1.5,
     trackBloom: 0.35,
     crt: true,
-    crtIntensity: 0.55,
+    crtIntensity: 0.25,
     playing: true,
     zoom: 1,
     ...initialOptions,
@@ -706,7 +706,7 @@ export function mountSubway(
     ctx.restore();
     if (options.crt) {
       // Apply scanlines across the complete image, including bright train glyphs.
-      crtSurface.mask(ctx, options.crtIntensity, time);
+      crtSurface.mask(ctx, options.crtIntensity, time, zoom);
     }
     if (options.bloom) trainBloom.paint(ctx, options.bloomIntensity);
     if (options.crt) crtSurface.glass(ctx, options.crtIntensity);
