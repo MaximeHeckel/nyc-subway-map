@@ -10,6 +10,7 @@ import type {
   GtfsStops,
 } from "./types";
 import { geoMercator } from "d3-geo";
+import { createTrainBloom } from "./trainBloom";
 import { createCrtSurface } from "./crtSurface";
 import { createAsciiBackdrop } from "./asciiBackdrop";
 import { rasterizeSchematic } from "./schematicGrid";
@@ -64,9 +65,12 @@ export function mountSubway(
     speed: 1,
     trainLength: 1,
     glow: true,
-    glowIntensity: 1.5,
+    glowIntensity: 0.6,
+    bloom: true,
+    bloomIntensity: 1.5,
+    trackBloom: 0.35,
     crt: true,
-    crtIntensity: 1,
+    crtIntensity: 0.55,
     playing: true,
     zoom: 1,
     ...initialOptions,
@@ -85,6 +89,7 @@ export function mountSubway(
   };
   const controller = new AbortController();
   const crtSurface = createCrtSurface();
+  const trainBloom = createTrainBloom();
   const asciiBackdrop = createAsciiBackdrop();
   let animationFrame = 0;
   let liveSnapshot: Pick<RealtimeSnapshot, "trains"> &
@@ -92,7 +97,7 @@ export function mountSubway(
   let liveReceivedAt = 0;
   const lightSprites = new Map<
     string,
-    { image: HTMLCanvasElement; size: number }
+    { image: HTMLCanvasElement; emission: HTMLCanvasElement; size: number }
   >();
   const trackPaths = new Map<string, Path2D>();
   let trackSettings = "";
@@ -601,20 +606,42 @@ export function mountSubway(
         appendSegment(brush, char, size / 2, size / 2, fontSize);
         brush.stroke();
       }
-      sprite = { image, size };
+      const emission = document.createElement("canvas");
+      emission.width = emission.height = image.width;
+      const core = emission.getContext("2d")!;
+      core.scale(resolution, resolution);
+      core.textAlign = "center";
+      core.textBaseline = "middle";
+      core.font = brush.font;
+      core.fillStyle = core.strokeStyle = color;
+      core.lineWidth = Math.max(0.75, fontSize * 0.1);
+      core.lineCap = "butt";
+      if (head) core.fillText(char, size / 2, size / 2);
+      else {
+        core.beginPath();
+        appendSegment(core, char, size / 2, size / 2, fontSize);
+        core.stroke();
+      }
+      sprite = { image, emission, size };
       lightSprites.set(key, sprite);
     }
+    const x = ox + p[0] * scale - sprite.size / 2;
+    const y = oy + p[1] * scale - sprite.size / 2;
     ctx.globalAlpha = 1;
-    ctx.drawImage(
-      sprite.image,
-      ox + p[0] * scale - sprite.size / 2,
-      oy + p[1] * scale - sprite.size / 2,
-      sprite.size,
-      sprite.size,
-    );
+    ctx.drawImage(sprite.image, x, y, sprite.size, sprite.size);
+    if (options.bloom && options.bloomIntensity > 0) {
+      trainBloom.add(
+        sprite.emission,
+        panX + x * zoom,
+        panY + y * zoom,
+        sprite.size * zoom,
+      );
+    }
   }
+
   function draw() {
     clampPan();
+    if (options.bloom && options.bloomIntensity > 0) trainBloom.begin(w, h);
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
@@ -636,9 +663,17 @@ export function mountSubway(
     ctx.translate(panX, panY);
     ctx.scale(zoom, zoom);
     drawTracks();
-    // Bright train emissions are drawn over most of the shadow mask, so they
-    // fill the dark scanline gaps while the dim route network retains texture.
-    if (options.crt) crtSurface.mask(ctx, options.crtIntensity * 0.82);
+    if (options.bloom && options.bloomIntensity > 0) {
+      trainBloom.addTracks(
+        trackPaths,
+        ctx.lineWidth,
+        zoom,
+        panX,
+        panY,
+        trackSettings,
+        options.trackBloom,
+      );
+    }
     // Real trains use station updates and bounded arrival-time interpolation.
     const live = options.dataMode === "live";
     const now =
@@ -670,9 +705,11 @@ export function mountSubway(
       }
     ctx.restore();
     if (options.crt) {
-      crtSurface.mask(ctx, options.crtIntensity * 0.18);
-      crtSurface.glass(ctx, options.crtIntensity);
+      // Apply scanlines across the complete image, including bright train glyphs.
+      crtSurface.mask(ctx, options.crtIntensity, time);
     }
+    if (options.bloom) trainBloom.paint(ctx, options.bloomIntensity);
+    if (options.crt) crtSurface.glass(ctx, options.crtIntensity);
   }
   function advance(dt: number) {
     for (const r of data.routes)
@@ -794,6 +831,7 @@ export function mountSubway(
     },
     destroy() {
       crtSurface.destroy();
+      trainBloom.destroy();
       asciiBackdrop.destroy();
       lightSprites.clear();
       trackPaths.clear();

@@ -28,13 +28,14 @@ To use another port: `pnpm dev --port 3001` or `pnpm start --port 3001`.
 - `src/components/SubwayMap.module.css` — full-screen canvas sizing.
 - `src/lib/subwayCanvas.ts` — Canvas 2D drawing, ASCII rasterization, train simulation, CRT, zoom/pan. The renderer exposes `setOptions` and `destroy` for cleanup for animation frames, resize observers, and native event listeners, including during Fast Refresh and React Strict Mode.
 - `src/lib/asciiBackdrop.ts` — cached punctuation aligned to unoccupied route-grid cells.
+- `src/lib/trainBloom.ts` — selective track and train bloom using two low-resolution blur layers.
 - `src/lib/crtSurface.ts` — cached screen-space phosphor slots, scanlines, and rounded glass shading.
 - `src/data/routes.ts` — route colors and authored schematic corridors.
 - `src/data/subway.json` — bundled MTA geographic route and station data.
 - `src/pages/index.tsx` — home page.
 - `src/pages/api/health.ts` — working Pages Router API endpoint at `/api/health`.
 
-The canvas fills the viewport and fits the complete map at 1× without stretching. DialKit contains all controls, including glow intensity and CRT strength. The CRT texture stays fixed to the screen while zooming; most of its scanline shading is drawn before train emissions so bright trains shine through. The texture and glass layers are regenerated only on resize. It preserves 35% idle opacity, bright live or simulated trains, single-width ASCII diagonals, schematic/geographic layouts, route filtering, CRT/glow toggles, pause/speed, and zoom from 1× to 5×. Drag to pan, scroll or pinch to zoom.
+The canvas fills the viewport and fits the complete map at 1× without stretching. DialKit contains all controls, including glow intensity, a separate Bloom toggle/intensity, and CRT strength. The CRT texture stays fixed to the screen while zooming; horizontal scanlines use a four-pixel pitch and shade the complete image, including bright trains. The fine lines scroll upward, alongside a brighter soft band that sweeps upward across the display every 12 seconds; both pause with Playing. The textures are cached and regenerated only on resize; animation translates the cached strips. It preserves 35% idle opacity, bright live or simulated trains, single-width ASCII diagonals, schematic/geographic layouts, route filtering, CRT/glow toggles, pause/speed, and zoom from 1× to 5×. Drag to pan, scroll or pinch to zoom.
 
 ## Real-time trains
 
@@ -42,7 +43,7 @@ The canvas fills the viewport and fits the complete map at 1× without stretchin
 
 The client polls every 15 seconds. **Live MTA** is the default in DialKit; **Simulation** remains available for local visual work. The speed slider affects simulation only. Mapped/off-map train counts are shown below the DialKit controls.
 
-Trains default to a single directional arrowhead (`→`, `←`, `↑`, `↓`, or a diagonal arrow) with an optional second-character track-aligned tail stroke, for example `-→` or `←-`. Track dashes and train tails share the same fixed-length stroke geometry in every orientation; inactive tracks are batched into cached paths by color. Glowing glyphs are cached as small images to avoid repeating blur operations for hundreds of active trains every frame.
+Trains default to a single directional arrowhead (`→`, `←`, `↑`, `↓`, or a diagonal arrow) with an optional second-character track-aligned tail stroke, for example `-→` or `←-`. Track dashes and train tails share the same fixed-length stroke geometry in every orientation; inactive tracks are batched into cached paths by color. Glowing glyphs are cached as small images to avoid repeating blur operations for hundreds of active trains every frame. Bloom separately collects sharp train emissions, blurs them at two small resolutions, and adds the halos over the map. Its largest buffer is capped at 512 pixels on the longest side; tracks feed the same blur passes at 35% emission strength by default, adjustable with Track Bloom (zero disables it). Track emissions are cached until the view, routes, or strength changes. Glow and Bloom can be toggled independently.
 
 ### Position accuracy
 

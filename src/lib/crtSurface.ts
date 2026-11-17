@@ -1,7 +1,20 @@
-/** Cached screen-space texture. No blur, pixel readback, or animated noise. */
+/** Cached screen-space textures with fine scanline motion and a soft refresh band. */
 export function createCrtSurface() {
   const mask = document.createElement("canvas");
   const glass = document.createElement("canvas");
+  const scanlines = document.createElement("canvas");
+  const band = document.createElement("canvas");
+  const pitch = 4;
+  band.width = 1;
+  band.height = 256;
+  const bandBrush = band.getContext("2d")!;
+  const bandGradient = bandBrush.createLinearGradient(0, 0, 0, band.height);
+  for (let i = 0; i <= 16; i++) {
+    const alpha = Math.sin((i / 16) * Math.PI) ** 2;
+    bandGradient.addColorStop(i / 16, `rgba(205, 220, 212, ${alpha})`);
+  }
+  bandBrush.fillStyle = bandGradient;
+  bandBrush.fillRect(0, 0, 1, band.height);
   let width = 0;
   let height = 0;
 
@@ -15,7 +28,7 @@ export function createCrtSurface() {
     const texture = mask.getContext("2d")!;
     const tile = document.createElement("canvas");
     tile.width = 6;
-    tile.height = 6;
+    tile.height = 12;
     const phosphor = tile.getContext("2d")!;
 
     // Staggered RGB phosphor slots, separated by the shadow mask.
@@ -24,7 +37,7 @@ export function createCrtSurface() {
       "rgba(95,255,155,.04)",
       "rgba(90,135,255,.05)",
     ];
-    for (let row = 0; row < 2; row++) {
+    for (let row = 0; row < 4; row++) {
       for (let channel = 0; channel < 3; channel++) {
         const x = (channel * 2 + row * 3) % 6;
         phosphor.fillStyle = colors[channel];
@@ -33,18 +46,28 @@ export function createCrtSurface() {
         phosphor.fillRect(x + 1, row * 3, 0.5, 3);
       }
     }
-    for (let row = 0; row < 2; row++) {
-      const y = row * 3;
-      const scanline = phosphor.createLinearGradient(0, y, 0, y + 3);
-      scanline.addColorStop(0, "rgba(0,0,0,.40)");
-      scanline.addColorStop(0.3, "rgba(0,0,0,.22)");
-      scanline.addColorStop(0.58, "rgba(0,0,0,0)");
-      scanline.addColorStop(1, "rgba(0,0,0,.05)");
-      phosphor.fillStyle = scanline;
-      phosphor.fillRect(0, y, 6, 3);
-    }
     texture.fillStyle = texture.createPattern(tile, "repeat")!;
     texture.fillRect(0, 0, w, h);
+
+    // One extra period keeps the moving scanlines seamless at both screen edges.
+    scanlines.width = 1;
+    scanlines.height = Math.ceil(h) + pitch;
+    const lines = scanlines.getContext("2d")!;
+    const lineTile = document.createElement("canvas");
+    lineTile.width = 1;
+    lineTile.height = pitch;
+    const lineBrush = lineTile.getContext("2d")!;
+    const scanline = lineBrush.createLinearGradient(0, 0, 0, pitch);
+    scanline.addColorStop(0, "rgba(0,0,0,.70)");
+    scanline.addColorStop(0.18, "rgba(0,0,0,.60)");
+    scanline.addColorStop(0.38, "rgba(0,0,0,.10)");
+    scanline.addColorStop(0.55, "rgba(0,0,0,0)");
+    scanline.addColorStop(0.8, "rgba(0,0,0,0)");
+    scanline.addColorStop(1, "rgba(0,0,0,.70)");
+    lineBrush.fillStyle = scanline;
+    lineBrush.fillRect(0, 0, 1, pitch);
+    lines.fillStyle = lines.createPattern(lineTile, "repeat")!;
+    lines.fillRect(0, 0, 1, scanlines.height);
 
     const surface = glass.getContext("2d")!;
     // Elliptical falloff follows the screen's proportions on wide and tall windows.
@@ -88,6 +111,9 @@ export function createCrtSurface() {
     ctx: CanvasRenderingContext2D,
     image: HTMLCanvasElement,
     opacity: number,
+    offsetY = 0,
+    drawHeight = height,
+    blend: GlobalCompositeOperation = "source-over",
   ) {
     if (!width || !height || opacity <= 0) return;
     ctx.save();
@@ -101,19 +127,29 @@ export function createCrtSurface() {
       0,
     );
     ctx.globalAlpha = Math.min(1, opacity);
+    ctx.globalCompositeOperation = blend;
     ctx.shadowBlur = 0;
-    ctx.drawImage(image, 0, 0, width, height);
+    ctx.drawImage(image, 0, offsetY, width, drawHeight);
     ctx.restore();
   }
 
   return {
     resize,
-    mask: (ctx: CanvasRenderingContext2D, opacity: number) =>
-      paint(ctx, mask, opacity),
+    mask(ctx: CanvasRenderingContext2D, opacity: number, seconds: number) {
+      paint(ctx, mask, opacity);
+      const bandHeight = height * 0.22;
+      const bandY =
+        height - ((seconds / 12 + 0.3) % 1) * (height + bandHeight);
+      paint(ctx, band, opacity * 0.12, bandY, bandHeight, "screen");
+      // Move the fine raster independently of the phosphor grid and broad band.
+      const offset = -((seconds * 4) % pitch);
+      paint(ctx, scanlines, opacity, offset, scanlines.height);
+    },
     glass: (ctx: CanvasRenderingContext2D, opacity: number) =>
       paint(ctx, glass, opacity),
     destroy() {
       mask.width = mask.height = glass.width = glass.height = 1;
+      scanlines.width = scanlines.height = band.width = band.height = 1;
     },
   };
 }

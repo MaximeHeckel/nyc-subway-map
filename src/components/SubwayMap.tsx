@@ -39,9 +39,12 @@ const controlConfig = {
   simSpeed: [1, 0.25, 3, 0.25],
   zoom: [1, 1, 5, 0.01],
   glow: true as boolean,
-  glowIntensity: [1.5, 0, 4, 0.1],
+  glowIntensity: [0.6, 0, 4, 0.1],
+  bloom: true as boolean,
+  bloomIntensity: [1.5, 0, 3, 0.1],
+  trackBloom: [0.35, 0, 1, 0.05],
   crt: true as boolean,
-  crtStrength: [1, 0, 1.5, 0.05],
+  crtStrength: [0.55, 0, 1.5, 0.05],
 } satisfies DialConfig;
 
 export default function SubwayMap() {
@@ -67,6 +70,9 @@ export default function SubwayMap() {
       zoom: values.zoom,
       glow: values.glow,
       glowIntensity: values.glowIntensity,
+      bloom: values.bloom,
+      bloomIntensity: values.bloomIntensity,
+      trackBloom: values.trackBloom,
       crt: values.crt,
       crtIntensity: values.crtStrength,
     }),

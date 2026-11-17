@@ -9,6 +9,9 @@ export interface SubwayOptions {
   trainLength: 1 | 2;
   glow: boolean;
   glowIntensity: number;
+  bloom: boolean;
+  bloomIntensity: number;
+  trackBloom: number;
   crt: boolean;
   crtIntensity: number;
   playing: boolean;
