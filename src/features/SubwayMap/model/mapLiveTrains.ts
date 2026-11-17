@@ -9,7 +9,10 @@ import type { Route, SubwayOptions } from "../types";
 import stationMapData from "@/data/station-map.json";
 import gtfsStopsData from "@/data/gtfs/stops.json";
 import { locateSchematicTrain } from "./livePositions";
+import { GEOGRAPHIC_DENSITY } from "../constants";
 import { nearestIndex } from "./geometry";
+
+const stationSnapDistanceSquared = (4 * GEOGRAPHIC_DENSITY) ** 2;
 
 const stationMap = stationMapData as StationMap;
 const gtfsStops = gtfsStopsData as unknown as GtfsStops;
@@ -75,7 +78,7 @@ export function mapLiveTrains(
       candidates.sort((a, b) => a.distance - b.distance);
       const match = candidates[0];
 
-      if (!match || match.distance > 16) {
+      if (!match || match.distance > stationSnapDistanceSquared) {
         unmapped++;
         continue;
       }
@@ -87,7 +90,7 @@ export function mapLiveTrains(
       if (previous) {
         const from = nearestIndex(characters, projection(previous.p)!);
 
-        if (from.distance <= 16) {
+        if (from.distance <= stationSnapDistanceSquared) {
           fromIndex = from.index;
         }
       }

@@ -20,6 +20,7 @@ export const DEFAULT_OPTIONS: SubwayOptions = {
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 5;
 export const CELL_SIZE = 2;
+export const GEOGRAPHIC_DENSITY = 3;
 export const FONT_SCALE = 2.65;
 export const TRACK_OPACITY = 0.35;
 export const MAX_FRAME_DELTA = 0.08;

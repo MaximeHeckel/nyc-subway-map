@@ -37,14 +37,9 @@ const baselines = {
     A: "a048ab7555eb00a60ecead916b69c2f349f385d17f3b4696f93b570753ecb9bd",
     SIR: "947bdc581716cdf83c7af5c9784816fbf4be7514784ca2b51d70fe53267fad5f",
   },
-  geographic: {
-    all: "ffdcbae9b0cc8187eb2848290af37c115a5b12534e71850c4f8b94f6cf2dd0c4",
-    A: "cb8e76824d7fb8a6c90f29413d8afd3233fcee2746182f1f5369f898a643ad87",
-    SIR: "5289baaab427a7896390c7b1135c1a53642a0a3f10c33c28f6755f727144e759",
-  },
 };
 
-for (const layout of ["orthogonal", "geographic"] as const) {
+for (const layout of ["orthogonal"] as const) {
   for (const route of ["all", "A", "SIR"] as const) {
     test(`${layout}/${route} preserves the original map and train placements`, () => {
       const model = createSubwayModel(layout, route);
@@ -72,6 +67,62 @@ for (const layout of ["orthogonal", "geographic"] as const) {
     });
   }
 }
+
+test("geographic routes retain a fine, continuous eight-direction grid", () => {
+  const model = createSubwayModel("geographic", "all");
+
+  // The coarse map had 1,057 cells: nearby corridors need more room than that.
+  assert.ok(model.cells.length > 2500);
+  assert.ok(
+    model.cells.filter((cell) => cell.colors.length > 1).length /
+      model.cells.length <
+      0.3,
+  );
+
+  for (const route of model.routes) {
+    for (const path of route.characterPaths.values()) {
+      assert.ok(path.length > 0);
+
+      path.forEach(([x, y], index) => {
+        assert.equal(x % 2, 0);
+        assert.equal(y % 2, 0);
+
+        if (index === 0) return;
+
+        const previous = path[index - 1];
+        assert.equal(
+          Math.max(Math.abs(x - previous[0]), Math.abs(y - previous[1])),
+          2,
+        );
+      });
+    }
+  }
+});
+
+test("geographic trains remain on their service's character paths in both directions", () => {
+  const model = createSubwayModel("geographic", "all");
+
+  for (const direction of ["N", "S"] as const) {
+    const coverage = model.setLiveTrains(
+      trains.map((train) => ({ ...train, direction })),
+    );
+    assert.ok(coverage.mapped / trains.length > 0.95);
+
+    for (const route of model.routes) {
+      for (const train of route.liveTrains) {
+        assert.ok(
+          [...route.characterPaths.values()].includes(train.characters),
+        );
+
+        for (const time of [1000, 1030, 1060]) {
+          for (const glyph of getTrainGlyphs(train, 2, time)) {
+            assert.ok(train.characters.includes(glyph.point));
+          }
+        }
+      }
+    }
+  }
+});
 
 test("layout changes remap retained trains onto the new character paths", () => {
   const model = createSubwayModel("orthogonal", "all");

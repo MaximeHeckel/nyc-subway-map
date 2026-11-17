@@ -16,11 +16,12 @@ export function createGlyphCache() {
     scale: number,
     zoom: number,
     glowIntensity: number,
+    minimumHeadSize = 0,
   ) {
     const intensity = glowIntensity;
     const dpr = pixelRatio();
     const resolution = Math.min(3, dpr * Math.ceil(zoom));
-    const settings = `${scale}:${resolution}:${intensity}`;
+    const settings = `${scale}:${resolution}:${intensity}:${minimumHeadSize}`;
 
     if (settings !== spriteSettings) {
       lightSprites.clear();
@@ -31,7 +32,7 @@ export function createGlyphCache() {
     let sprite = lightSprites.get(key);
 
     if (!sprite) {
-      const fontSize = scale * FONT_SCALE;
+      const fontSize = Math.max(scale * FONT_SCALE, head ? minimumHeadSize : 0);
       const blur = 8 * intensity;
       const size = Math.ceil(fontSize * 2 + blur * 6 + 4);
       function renderGlyph(shadowBlur: number) {

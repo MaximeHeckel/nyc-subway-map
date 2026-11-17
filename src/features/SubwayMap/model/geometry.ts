@@ -9,40 +9,29 @@ export function gridPath(
   projection: GeoProjection,
 ): RoutePath {
   const result: RoutePath = [];
-  let last: Point | null = null;
+  let previous: Point | undefined;
 
-  for (const point of points) {
-    const projected = projection(point)!.map(Math.round) as Point;
+  for (const coordinates of points) {
+    const point = projection(coordinates)! as Point;
 
-    if (!last) {
-      result.push(projected);
-      last = projected;
+    if (!previous) {
+      result.push(point);
+      previous = point;
       continue;
     }
 
-    let [x, y] = last;
-    const dx = projected[0] - x;
-    const dy = projected[1] - y;
-    const stepsX = Math.abs(dx);
-    const stepsY = Math.abs(dy);
-    let stepX = 0;
-    let stepY = 0;
+    // Preserve the projected line until the final ASCII-grid snap. Sampling
+    // supports train progress without introducing an intermediate staircase.
+    const dx = point[0] - previous[0];
+    const dy = point[1] - previous[1];
+    const steps = Math.ceil(Math.hypot(dx, dy));
 
-    while (stepX < stepsX || stepY < stepsY) {
-      if (
-        stepX < stepsX &&
-        (stepY === stepsY ||
-          (stepX + 0.5) / (stepsX || 1) < (stepY + 0.5) / (stepsY || 1))
-      ) {
-        x += Math.sign(dx);
-        stepX++;
-      } else {
-        y += Math.sign(dy);
-        stepY++;
-      }
-      result.push([x, y]);
+    for (let step = 1; step <= steps; step++) {
+      const fraction = step / steps;
+      result.push([previous[0] + dx * fraction, previous[1] + dy * fraction]);
     }
-    last = projected;
+
+    previous = point;
   }
 
   return result;
@@ -189,8 +178,8 @@ export function characterPath(
 }
 
 export function characterAt(path: RoutePath, index: number) {
-  // Follow start real adjacent edge instead of averaging across start turn, which
-  // could label start horizontal correction as another diagonal dash.
+  // Follow a real adjacent edge instead of averaging across a turn, which
+  // could label a horizontal correction as another diagonal dash.
   const start =
     path[index === path.length - 1 ? Math.max(0, index - 1) : index];
   const end = path[Math.min(path.length - 1, index + 1)];

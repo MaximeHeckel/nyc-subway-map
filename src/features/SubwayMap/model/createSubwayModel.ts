@@ -1,10 +1,11 @@
 import { geoMercator } from "d3-geo";
 import type { FeatureCollection, LineString } from "geojson";
-import type { LiveTrain, RoutePath } from "@/types/transit";
+import type { LiveTrain, RoutePath, Point } from "@/types/transit";
 import type { Route, AsciiCell, SubwayOptions } from "../types";
 import mapData from "@/data/subway.json";
 import { colors, routeOrder, cleanRoutes } from "@/data/routes";
 import { gridPath, cleanPath, characterPath, characterAt } from "./geometry";
+import { GEOGRAPHIC_DENSITY } from "../constants";
 import { mapLiveTrains } from "./mapLiveTrains";
 import { advanceSimulation, seedSimulation } from "./simulation";
 
@@ -55,6 +56,20 @@ export function createSubwayModel(
     collection(data.routes.filter((route) => route.id === "SIR")),
   );
 
+  // More grid coordinates resolve neighboring corridors without changing framing.
+  for (const projection of [project, inset]) {
+    projection.scale(projection.scale() * GEOGRAPHIC_DENSITY);
+    projection.translate(
+      projection
+        .translate()
+        .map((value) => value * GEOGRAPHIC_DENSITY) as Point,
+    );
+  }
+
+  function density() {
+    return layoutMode === "geographic" ? GEOGRAPHIC_DENSITY : 1;
+  }
+
   function rebuildRoutes() {
     for (const route of data.routes) {
       const projection = route.id === "SIR" ? inset : project;
@@ -70,7 +85,7 @@ export function createSubwayModel(
         }
       }
 
-      route.trains = seedSimulation(route);
+      route.trains = seedSimulation(route, density());
     }
   }
 
@@ -152,6 +167,9 @@ export function createSubwayModel(
     get occupiedCells() {
       return occupiedCells;
     },
+    get density() {
+      return density();
+    },
     get revision() {
       return asciiRevision;
     },
@@ -177,7 +195,7 @@ export function createSubwayModel(
       return mapLiveTrains(data.routes, trains, layoutMode, project, inset);
     },
     advance(delta: number, speed: number) {
-      advanceSimulation(data.routes, delta, speed);
+      advanceSimulation(data.routes, delta, speed * density());
     },
   };
 }

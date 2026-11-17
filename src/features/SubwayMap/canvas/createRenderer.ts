@@ -57,7 +57,17 @@ export function createSubwayRenderer(
   ) {
     const { scale, zoom, offsetX, offsetY, panX, panY } = camera.view;
     const intensity = options.glow ? options.glowIntensity : 0;
-    const sprite = glyphs.get(char, color, head, scale, zoom, intensity);
+    // Keep geographic arrowheads readable when the finer grid fits the screen.
+    const minimumHeadSize = model.density > 1 ? 6 / zoom : 0;
+    const sprite = glyphs.get(
+      char,
+      color,
+      head,
+      scale,
+      zoom,
+      intensity,
+      minimumHeadSize,
+    );
     const x = offsetX + point[0] * scale - sprite.size / 2;
     const y = offsetY + point[1] * scale - sprite.size / 2;
 
@@ -98,6 +108,7 @@ export function createSubwayRenderer(
       offsetX,
       offsetY,
       cellSize: CELL_SIZE,
+      stride: model.density,
       occupied: model.occupiedCells,
       revision: model.revision,
     });

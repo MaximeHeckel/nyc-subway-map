@@ -18,14 +18,14 @@ export function advanceSimulation(routes: Route[], dt: number, speed: number) {
   }
 }
 
-export function seedSimulation(route: Route): SimulatedTrain[] {
+export function seedSimulation(route: Route, density = 1): SimulatedTrain[] {
   const trains: SimulatedTrain[] = [];
   const usablePaths = route.paths.filter((path) => path.length >= 5);
   const totalLength = usablePaths.reduce(
     (total, path) => total + path.length,
     0,
   );
-  const count = Math.max(1, Math.round(route.cells.size / 95));
+  const count = Math.max(1, Math.round(route.cells.size / (95 * density)));
 
   for (let i = 0; i < count && totalLength; i++) {
     let distance = (totalLength * (i + 0.35)) / count;

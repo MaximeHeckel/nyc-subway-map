@@ -12,6 +12,7 @@ interface BackdropOptions {
   offsetX: number;
   offsetY: number;
   cellSize: number;
+  stride: number;
   occupied: Set<string>;
   revision: number;
 }
@@ -35,6 +36,7 @@ export function createAsciiBackdrop() {
         offsetX,
         offsetY,
         cellSize,
+        stride,
         occupied,
         revision,
       }: BackdropOptions,
@@ -50,6 +52,8 @@ export function createAsciiBackdrop() {
         offsetX,
         offsetY,
         revision,
+        stride,
+        cellSize,
         dpr,
       ].join(":");
 
@@ -72,13 +76,17 @@ export function createAsciiBackdrop() {
 
         const originX = panX + offsetX * zoom;
         const originY = panY + offsetY * zoom;
-        const firstColumn = Math.floor(-originX / pitch);
+        const firstColumn = Math.floor(-originX / pitch / stride) * stride;
         const lastColumn = Math.ceil((width - originX) / pitch);
-        const firstRow = Math.floor(-originY / pitch);
+        const firstRow = Math.floor(-originY / pitch / stride) * stride;
         const lastRow = Math.ceil((height - originY) / pitch);
 
-        for (let row = firstRow; row <= lastRow; row++) {
-          for (let column = firstColumn; column <= lastColumn; column++) {
+        for (let row = firstRow; row <= lastRow; row += stride) {
+          for (
+            let column = firstColumn;
+            column <= lastColumn;
+            column += stride
+          ) {
             if (occupied.has(`${column * cellSize},${row * cellSize}`))
               continue;
             // Deterministic world-cell selection: no sparkling or shuffling on pan.
