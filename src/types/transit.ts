@@ -1,23 +1,6 @@
 export type Point = [number, number];
 export type RoutePath = Point[];
 
-export interface SubwayOptions {
-  dataMode: "live" | "simulation";
-  layout: "orthogonal" | "geographic";
-  route: string;
-  speed: number;
-  trainLength: 1 | 2;
-  glow: boolean;
-  glowIntensity: number;
-  bloom: boolean;
-  bloomIntensity: number;
-  trackBloom: number;
-  crt: boolean;
-  crtIntensity: number;
-  playing: boolean;
-  zoom: number;
-}
-
 export interface LiveTrain {
   id: string;
   routeId: string;

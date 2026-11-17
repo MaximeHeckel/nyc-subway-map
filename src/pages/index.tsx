@@ -1,5 +1,5 @@
 import Head from "next/head";
-import SubwayMap from "@/components/SubwayMap";
+import SubwayMap from "@/features/SubwayMap";
 
 export default function Home() {
   return (

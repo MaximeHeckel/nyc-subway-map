@@ -24,16 +24,18 @@ To use another port: `pnpm dev --port 3001` or `pnpm start --port 3001`.
 
 ## Iterate
 
-- `src/components/SubwayMap.tsx` — DialKit controls and Canvas mounting.
-- `src/components/SubwayMap.module.css` — full-screen canvas sizing.
-- `src/lib/subwayCanvas.ts` — Canvas 2D drawing, ASCII rasterization, train simulation, CRT, zoom/pan. The renderer exposes `setOptions` and `destroy` for cleanup for animation frames, resize observers, and native event listeners, including during Fast Refresh and React Strict Mode.
-- `src/lib/asciiBackdrop.ts` — cached punctuation aligned to unoccupied route-grid cells.
-- `src/lib/trainBloom.ts` — selective track and train bloom using two low-resolution blur layers.
-- `src/lib/crtSurface.ts` — cached screen-space phosphor slots, scanlines, and rounded glass shading.
-- `src/data/routes.ts` — route colors and authored schematic corridors.
-- `src/data/subway.json` — bundled MTA geographic route and station data.
-- `src/pages/index.tsx` — home page.
-- `src/pages/api/health.ts` — working Pages Router API endpoint at `/api/health`.
+- `src/features/SubwayMap/SubwayMap.tsx` — canvas and controls composition; styles are colocated in the CSS Module.
+- `src/features/SubwayMap/constants.ts` — shared renderer and DialKit defaults, zoom bounds, and timing constants.
+- `src/features/SubwayMap/hooks/` — controls, canvas lifecycle/HMR, and abortable MTA polling.
+- `src/features/SubwayMap/model/` — pure geometry, ASCII routing, live station placement, and simulated train movement.
+- `src/features/SubwayMap/canvas/createRenderer.ts` — render passes and animation lifecycle. Exposes `setOptions`, `setLiveData`, and `destroy`.
+- `src/features/SubwayMap/canvas/` — camera, gestures, cached track paths, glyph sprites, and ASCII backdrop.
+- `src/features/SubwayMap/canvas/effects/` — low-resolution bloom and animated CRT textures.
+- `src/types/transit.ts` — shared transit and feed contracts, independent of React and canvas.
+- `src/data/` — route colors, authored corridors, and bundled MTA snapshots.
+- `src/pages/` — Pages Router entry points and API routes.
+
+Feature-specific code stays together, following the organization of the blog and personal site. The model does not depend on the DOM; canvas factories own their caches and cleanup; hooks connect them to React. Effects retain their original order: scene, CRT mask, bloom, then glass. Defaults have one source of truth.
 
 The canvas fills the viewport and fits the complete map at 1× without stretching. DialKit contains all controls, including glow intensity, a separate Bloom toggle/intensity, and CRT strength. The phosphor texture and glass stay fixed to the screen; horizontal scanline spacing scales with map zoom, from 1.5 pixels at 1× to four pixels at 5×, and shades the complete image, including bright trains. The fine lines scroll upward, alongside a brighter soft band that sweeps upward across the display every 12 seconds; both pause with Playing. The textures are cached and regenerated only on resize; animation translates the cached strips. It preserves 35% idle opacity, bright live or simulated trains, single-width ASCII diagonals, schematic/geographic layouts, route filtering, CRT/glow toggles, pause/speed, and zoom from 1× to 5×. Drag to pan, scroll or pinch to zoom.
 
@@ -55,13 +57,14 @@ The schematic uses service-specific station IDs, ordered GTFS stop patterns, and
 
 - `src/pages/api/trains.ts` — Pages Router endpoint.
 - `src/lib/server/mta.ts` — feed decoding, caching, normalization and observed transitions.
-- `src/lib/livePositions.ts` — branch selection and bounded interpolation.
+- `src/features/SubwayMap/model/livePositions.ts` — branch selection and bounded interpolation.
+- `src/lib/server/normalizeFeed.ts` — pure GTFS normalization and observed station transitions.
 - `src/data/station-anchors.json` — editable service-specific schematic anchors.
 - `pnpm map:build` — regenerate station positions after anchor edits.
 - `pnpm gtfs:refresh` — refresh bundled static station/pattern data from MTA.
 - `pnpm schema:build` — regenerate the decoder descriptor from vendored schemas.
 - `pnpm typecheck` — strict type checking for the app, scripts, and tests.
-- `pnpm test` — feed and mapping regression tests.
+- `pnpm test` — feed/mapping tests plus pre-refactor geometry snapshots, layout switching, and camera invariants.
 
 MTA resources: https://www.mta.info/developers and https://api.mta.info/
 

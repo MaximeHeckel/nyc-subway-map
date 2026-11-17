@@ -2,7 +2,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { unzipSync } from "fflate";
 import { parse } from "csv-parse/sync";
-import type { GtfsStops, GtfsPatterns } from "../src/lib/types";
+import type { GtfsStops, GtfsPatterns } from "../src/types/transit";
 
 const source = "https://rrgtfsfeeds.s3.amazonaws.com/gtfs_subway.zip";
 

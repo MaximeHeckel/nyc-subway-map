@@ -4,8 +4,12 @@ import type {
   StationMap,
   GtfsStops,
   GtfsPatterns,
-} from "../src/lib/types";
+} from "../src/types/transit";
 import fs from "node:fs";
+import {
+  cleanPath,
+  nearestIndex,
+} from "../src/features/SubwayMap/model/geometry";
 import { cleanRoutes } from "../src/data/routes.ts";
 const read = <T>(file: string): T =>
   JSON.parse(fs.readFileSync(new URL(file, import.meta.url), "utf8"));
@@ -44,40 +48,12 @@ for (const [route, branches] of Object.entries(anchors)) {
       candidate.indexOf(marks[0][0]),
       candidate.indexOf(marks.at(-1)![0]) + 1,
     );
-    // Match cleanPath's 8-way grid stepping so positions stay on the drawn track.
-    const points = cleanRoutes[route][pathIndex].map(([x, y]) => [
-      Math.round(x / 8) + 15,
-      Math.round(y / 8) + 3,
-    ]);
-    const path = [points[0]];
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1],
-        b = points[i],
-        sx = Math.sign(b[0] - a[0]),
-        sy = Math.sign(b[1] - a[1]);
-      const diagonal = Math.min(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]));
-      let [x, y] = a;
-      for (const end of [[b[0] - sx * diagonal, b[1] - sy * diagonal], b]) {
-        const n = Math.max(Math.abs(end[0] - x), Math.abs(end[1] - y)),
-          dx = Math.sign(end[0] - x),
-          dy = Math.sign(end[1] - y);
-        for (let k = 0; k < n; k++) {
-          x += dx;
-          y += dy;
-          path.push([x, y]);
-        }
-      }
-    }
+    // The generator and renderer share the exact same diagram path.
+    const path = cleanPath(cleanRoutes[route][pathIndex]);
+
     const placed = marks.map(([id, x, y]) => {
       const target = [Math.round(x / 8) + 15, Math.round(y / 8) + 3];
-      let index = 0;
-      path.forEach((p, i) => {
-        if (
-          Math.hypot(p[0] - target[0], p[1] - target[1]) <
-          Math.hypot(path[index][0] - target[0], path[index][1] - target[1])
-        )
-          index = i;
-      });
+      const { index } = nearestIndex(path, target as Point);
       return { id, index };
     });
     const mapped: Record<string, number> = {};

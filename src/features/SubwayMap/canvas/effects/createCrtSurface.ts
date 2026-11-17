@@ -1,4 +1,5 @@
 /** Cached screen-space textures with fine scanline motion and a soft refresh band. */
+
 export function createCrtSurface() {
   const mask = document.createElement("canvas");
   const glass = document.createElement("canvas");
@@ -10,6 +11,7 @@ export function createCrtSurface() {
   band.height = 256;
   const bandBrush = band.getContext("2d")!;
   const bandGradient = bandBrush.createLinearGradient(0, 0, 0, band.height);
+
   for (let i = 0; i <= 16; i++) {
     const alpha = Math.sin((i / 16) * Math.PI) ** 2;
     bandGradient.addColorStop(i / 16, `rgba(205, 220, 212, ${alpha})`);
@@ -20,7 +22,9 @@ export function createCrtSurface() {
   let height = 0;
 
   function resize(w: number, h: number) {
-    if (w === width && h === height) return;
+    if (w === width && h === height) {
+      return;
+    }
     width = w;
     height = h;
     // The phosphor mask and glass stay in screen space.
@@ -38,6 +42,7 @@ export function createCrtSurface() {
       "rgba(95,255,155,.04)",
       "rgba(90,135,255,.05)",
     ];
+
     for (let row = 0; row < 4; row++) {
       for (let channel = 0; channel < 3; channel++) {
         const x = (channel * 2 + row * 3) % 6;
@@ -117,7 +122,9 @@ export function createCrtSurface() {
     drawHeight = height,
     blend: GlobalCompositeOperation = "source-over",
   ) {
-    if (!width || !height || opacity <= 0) return;
+    if (!width || !height || opacity <= 0) {
+      return;
+    }
     ctx.save();
     // Ignore the map's zoom/pan; this texture belongs to the screen itself.
     ctx.setTransform(
@@ -131,6 +138,7 @@ export function createCrtSurface() {
     ctx.globalAlpha = Math.min(1, opacity);
     ctx.globalCompositeOperation = blend;
     ctx.shadowBlur = 0;
+
     if (image === scanlines) {
       // Average the fine raster when it becomes smaller than a screen pixel.
       ctx.imageSmoothingEnabled = true;

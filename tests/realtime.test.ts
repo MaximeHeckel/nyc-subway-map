@@ -1,15 +1,12 @@
-import type { RealtimeFeed, StationMap, GtfsStops } from "../src/lib/types";
+import { normalizeFeed } from "../src/lib/server/normalizeFeed.ts";
+import type { RealtimeFeed, StationMap, GtfsStops } from "../src/types/transit";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  normalizeFeed,
-  getRealtimeTrains,
-  FEEDS,
-} from "../src/lib/server/mta.ts";
+import { getRealtimeTrains, FEEDS } from "../src/lib/server/mta.ts";
 import {
   locateSchematicTrain,
   liveProgress,
-} from "../src/lib/livePositions.ts";
+} from "../src/features/SubwayMap/model/livePositions.ts";
 import stationMapData from "../src/data/station-map.json" with { type: "json" };
 import stopsData from "../src/data/gtfs/stops.json" with { type: "json" };
 import schema from "../src/data/gtfs/schema.json" with { type: "json" };

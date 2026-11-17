@@ -1,18 +1,23 @@
+import { FONT_SCALE } from "../constants";
+import { glyphFont } from "./glyphs";
+import { pixelRatio } from "./utils";
+
 interface BackdropOptions {
-  w: number;
-  h: number;
+  width: number;
+  height: number;
   scale: number;
   zoom: number;
   panX: number;
   panY: number;
-  ox: number;
-  oy: number;
+  offsetX: number;
+  offsetY: number;
   cellSize: number;
   occupied: Set<string>;
   revision: number;
 }
 
 /** Sparse punctuation on the same lattice as the route characters. */
+
 export function createAsciiBackdrop() {
   const image = document.createElement("canvas");
   let previousKey = "";
@@ -21,42 +26,56 @@ export function createAsciiBackdrop() {
     draw(
       ctx: CanvasRenderingContext2D,
       {
-        w,
-        h,
+        width,
+        height,
         scale,
         zoom,
         panX,
         panY,
-        ox,
-        oy,
+        offsetX,
+        offsetY,
         cellSize,
         occupied,
         revision,
       }: BackdropOptions,
     ) {
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      const key = [w, h, scale, zoom, panX, panY, ox, oy, revision, dpr].join(
-        ":",
-      );
+      const dpr = pixelRatio();
+      const key = [
+        width,
+        height,
+        scale,
+        zoom,
+        panX,
+        panY,
+        offsetX,
+        offsetY,
+        revision,
+        dpr,
+      ].join(":");
+
       if (key !== previousKey) {
         previousKey = key;
-        image.width = Math.max(1, Math.round(w * dpr));
-        image.height = Math.max(1, Math.round(h * dpr));
+        image.width = Math.max(1, Math.round(width * dpr));
+        image.height = Math.max(1, Math.round(height * dpr));
         const brush = image.getContext("2d")!;
         brush.setTransform(dpr, 0, 0, dpr, 0, 0);
         brush.textAlign = "center";
         brush.textBaseline = "middle";
-        brush.font = `bold ${scale * zoom * 2.65}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+        brush.font = glyphFont(scale * zoom * FONT_SCALE);
         brush.fillStyle = "#829094";
 
         const pitch = cellSize * scale * zoom;
-        if (pitch <= 0) return;
-        const originX = panX + ox * zoom;
-        const originY = panY + oy * zoom;
+
+        if (pitch <= 0) {
+          return;
+        }
+
+        const originX = panX + offsetX * zoom;
+        const originY = panY + offsetY * zoom;
         const firstColumn = Math.floor(-originX / pitch);
-        const lastColumn = Math.ceil((w - originX) / pitch);
+        const lastColumn = Math.ceil((width - originX) / pitch);
         const firstRow = Math.floor(-originY / pitch);
-        const lastRow = Math.ceil((h - originY) / pitch);
+        const lastRow = Math.ceil((height - originY) / pitch);
 
         for (let row = firstRow; row <= lastRow; row++) {
           for (let column = firstColumn; column <= lastColumn; column++) {
@@ -66,7 +85,11 @@ export function createAsciiBackdrop() {
             const hash =
               (Math.imul(column, 73856093) ^ Math.imul(row, 19349663)) >>> 0;
             const choice = hash % 20;
-            if (choice < 8) continue;
+
+            if (choice < 8) {
+              continue;
+            }
+
             const character = choice === 19 ? "+" : choice === 18 ? ":" : "·";
             brush.globalAlpha = character === "·" ? 0.11 : 0.065;
             brush.fillText(
@@ -77,7 +100,7 @@ export function createAsciiBackdrop() {
           }
         }
       }
-      ctx.drawImage(image, 0, 0, w, h);
+      ctx.drawImage(image, 0, 0, width, height);
     },
     destroy() {
       image.width = image.height = 1;

@@ -1,4 +1,4 @@
-import type { RoutePath } from "../lib/types";
+import type { RoutePath } from "../types/transit";
 
 export const colors: Record<string, string> = {
   1: "#ee352e",

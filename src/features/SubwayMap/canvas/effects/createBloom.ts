@@ -1,5 +1,6 @@
 /** Selective bloom: blur the combined track and train emissions on small offscreen canvases. */
-export function createTrainBloom() {
+
+export function createBloom() {
   const emissions = document.createElement("canvas");
   const tracks = document.createElement("canvas");
   const trackBrush = tracks.getContext("2d")!;
@@ -18,6 +19,7 @@ export function createTrainBloom() {
     const ratio = Math.min(0.25, 512 / Math.max(w, h));
     const lowWidth = Math.max(1, Math.round(w * ratio));
     const lowHeight = Math.max(1, Math.round(h * ratio));
+
     if (emissions.width !== lowWidth || emissions.height !== lowHeight) {
       emissions.width = near.width = lowWidth;
       emissions.height = near.height = lowHeight;
@@ -41,9 +43,12 @@ export function createTrainBloom() {
       revision: string,
       strength: number,
     ) {
-      if (strength <= 0) return;
+      if (strength <= 0) {
+        return;
+      }
 
       const key = `${revision}:${width}:${height}:${zoom}:${panX}:${panY}:${lineWidth}:${strength}`;
+
       if (key !== trackKey) {
         trackKey = key;
         tracks.width = emissions.width;
@@ -61,6 +66,7 @@ export function createTrainBloom() {
         trackBrush.globalAlpha = strength;
         trackBrush.lineWidth = lineWidth;
         trackBrush.lineCap = "butt";
+
         for (const [color, path] of paths) {
           trackBrush.strokeStyle = color;
           trackBrush.stroke(path);
@@ -77,7 +83,9 @@ export function createTrainBloom() {
       light.drawImage(image, x, y, size, size);
     },
     paint(ctx: CanvasRenderingContext2D, intensity: number) {
-      if (!width || !height || intensity <= 0) return;
+      if (!width || !height || intensity <= 0) {
+        return;
+      }
       // Blur the small emission buffers, never the full-resolution map.
       nearBrush.clearRect(0, 0, near.width, near.height);
       nearBrush.filter = "blur(1.25px)";
@@ -99,6 +107,7 @@ export function createTrainBloom() {
       );
       ctx.globalCompositeOperation = "lighter";
       ctx.shadowBlur = 0;
+
       for (const [image, weight] of [
         [near, 1],
         [wide, 0.65],

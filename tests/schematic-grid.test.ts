@@ -1,7 +1,7 @@
-import type { Point } from "../src/lib/types";
+import type { Point } from "../src/types/transit";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { rasterizeSchematic } from "../src/lib/schematicGrid.ts";
+import { rasterizeSchematic } from "../src/features/SubwayMap/model/schematicGrid.ts";
 
 const line = (
   x: number,
