@@ -38,7 +38,7 @@ export const VISUAL_PRESETS = {
     bloomIntensity: 1.5,
     trackBloom: 0,
     crt: true,
-    crtIntensity: 1.45,
+    crtIntensity: 0.35,
   },
 } as const satisfies Record<VisualPreset, VisualSettings>;
 
