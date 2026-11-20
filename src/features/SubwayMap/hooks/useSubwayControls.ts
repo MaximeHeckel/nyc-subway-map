@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 import { useDialKitController, type DialConfig } from "dialkit";
 import type { SubwayOptions } from "../types";
 import {
+  DEFAULT_VISUAL_PRESET,
+  getPresetControlValues,
+  type VisualPreset,
+} from "../presets";
+import {
   DEFAULT_OPTIONS,
   MIN_ZOOM,
   MAX_ZOOM,
@@ -25,6 +30,14 @@ const controlConfig = {
       { label: "Geographic", value: "geographic" },
     ],
   },
+  visualStyle: {
+    type: "select",
+    default: DEFAULT_OPTIONS.visualStyle,
+    options: [
+      { label: "ASCII", value: "ascii" },
+      { label: "Block glyphs", value: "tiles" },
+    ],
+  },
   trainLength: {
     type: "select",
     default: String(DEFAULT_OPTIONS.trainLength),
@@ -46,6 +59,7 @@ const controlConfig = {
 } satisfies DialConfig;
 
 export function useSubwayControls() {
+  const [preset, setPreset] = useState<VisualPreset>(DEFAULT_VISUAL_PRESET);
   const [routes, setRoutes] = useState(DEFAULT_OPTIONS.routes);
   const { values, setValues } = useDialKitController(
     "Controls",
@@ -58,6 +72,7 @@ export function useSubwayControls() {
     () => ({
       dataMode: values.data === "simulation" ? "simulation" : "live",
       layout: values.layout === "geographic" ? "geographic" : "orthogonal",
+      visualStyle: values.visualStyle === "tiles" ? "tiles" : "ascii",
       routes,
       trainLength: values.trainLength === "2" ? 2 : 1,
       playing: values.playing,
@@ -74,5 +89,10 @@ export function useSubwayControls() {
     [values, routes],
   );
 
-  return { controls, setControls: setValues, setRoutes };
+  function selectPreset(nextPreset: VisualPreset) {
+    setValues(getPresetControlValues(nextPreset));
+    setPreset(nextPreset);
+  }
+
+  return { controls, preset, selectPreset, setControls: setValues, setRoutes };
 }

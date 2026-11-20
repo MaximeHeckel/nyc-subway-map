@@ -3,6 +3,7 @@ import type { LiveTrain, RoutePath, Point } from "@/types/transit";
 export interface SubwayOptions {
   dataMode: "live" | "simulation";
   layout: "orthogonal" | "geographic";
+  visualStyle: "ascii" | "tiles";
   routes: readonly string[];
   speed: number;
   trainLength: 1 | 2;
@@ -45,6 +46,7 @@ export interface Route {
 export interface AsciiCell {
   point: Point;
   colors: string[];
+  routeIds: string[];
   chars: Set<string>;
   char?: string;
 }

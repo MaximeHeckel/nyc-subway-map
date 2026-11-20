@@ -127,10 +127,19 @@ export function createSubwayModel(
           const char = characterAt(path, i);
 
           if (!cells.has(key)) {
-            cells.set(key, { point, colors: [], chars: new Set() });
+            cells.set(key, {
+              point,
+              colors: [],
+              routeIds: [],
+              chars: new Set(),
+            });
           }
 
           const entry = cells.get(key)!;
+
+          if (!entry.routeIds.includes(route.id)) {
+            entry.routeIds.push(route.id);
+          }
 
           if (!entry.colors.includes(phosphor[route.id])) {
             entry.colors.push(phosphor[route.id]);

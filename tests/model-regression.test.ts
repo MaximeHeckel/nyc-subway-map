@@ -103,6 +103,23 @@ test("geographic routes retain a fine, continuous eight-direction grid", () => {
   }
 });
 
+test("shared cells retain distinct services even when their colors match", () => {
+  for (const layout of ["orthogonal", "geographic"] as const) {
+    const model = createSubwayModel(layout, ["A", "C"]);
+    const shared = model.cells.filter((cell) => cell.routeIds.length > 1);
+
+    assert.ok(shared.length > 0);
+
+    for (const cell of shared) {
+      assert.deepEqual(cell.routeIds, ["A", "C"]);
+      assert.equal(cell.colors.length, 1);
+    }
+
+    model.setLayout(layout, ["C"]);
+    assert.ok(model.cells.every((cell) => cell.routeIds.join() === "C"));
+  }
+});
+
 test("geographic trains remain on their service's character paths in both directions", () => {
   const model = createSubwayModel("geographic", routeOrder);
 

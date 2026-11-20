@@ -7,7 +7,8 @@ import styles from "./SubwayMap.module.css";
 
 export default function SubwayMap() {
   const [controlsOpen, setControlsOpen] = useState(true);
-  const { controls, setControls, setRoutes } = useSubwayControls();
+  const { controls, preset, selectPreset, setControls, setRoutes } =
+    useSubwayControls();
   const { canvasRef, receiveSnapshot } = useSubwayRenderer(
     controls,
     setControls,
@@ -20,7 +21,7 @@ export default function SubwayMap() {
         ref={canvasRef}
         className={styles.canvas}
         role="img"
-        aria-label={`Colored ASCII NYC subway map with ${controls.dataMode === "live" ? "live MTA trains at estimated positions" : "simulated trains"}. Use the DialKit controls or pinch to zoom; drag to pan.`}
+        aria-label={`Colored ${controls.visualStyle === "tiles" ? "block glyph" : "ASCII"} NYC subway map with ${controls.dataMode === "live" ? "live MTA trains at estimated positions" : "simulated trains"}. Use the DialKit controls or pinch to zoom; drag to pan.`}
       />
       <aside
         className={styles.controls}
@@ -54,7 +55,12 @@ export default function SubwayMap() {
           </svg>
         </button>
         <div id="subway-controls-content" hidden={!controlsOpen}>
-          <MapControls routes={controls.routes} onRoutesChange={setRoutes} />
+          <MapControls
+            preset={preset}
+            onPresetChange={selectPreset}
+            routes={controls.routes}
+            onRoutesChange={setRoutes}
+          />
           <dl className={styles.trainInfo} aria-label="Train count">
             <div>
               <dt>Trains</dt>

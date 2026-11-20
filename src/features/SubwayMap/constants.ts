@@ -1,21 +1,15 @@
 import { routeOrder } from "@/data/routes";
 import type { SubwayOptions } from "./types";
+import { DEFAULT_VISUAL_PRESET, VISUAL_PRESETS } from "./presets";
 
 export const DEFAULT_OPTIONS: SubwayOptions = {
   dataMode: "live",
   layout: "orthogonal",
   routes: routeOrder,
   speed: 1,
-  trainLength: 1,
-  glow: true,
-  glowIntensity: 0.6,
-  bloom: true,
-  bloomIntensity: 1.5,
-  trackBloom: 0.35,
-  crt: true,
-  crtIntensity: 0.25,
   playing: true,
   zoom: 1,
+  ...VISUAL_PRESETS[DEFAULT_VISUAL_PRESET],
 };
 
 export const CONTROL_PANEL_ID = "ny-subway";

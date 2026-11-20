@@ -92,6 +92,8 @@ function fakeCanvas(t: TestContext) {
           moveTo: noop,
           lineTo: noop,
           stroke: noop,
+          rect: noop,
+          fill: noop,
         }),
       };
     },
@@ -150,4 +152,66 @@ test("sprite cache retains recent entries and evicts old zoom/color variants", (
 
   assert.notEqual(get("oldest"), oldest);
   assert.notEqual(cache.get("→", "recent", true, 1, 2, 0.8), recent);
+});
+
+test("switching visual styles uses distinct sprites and reuses them on return", (t) => {
+  const canvas = fakeCanvas(t);
+  const cache = createGlyphCache();
+  const get = (style: "ascii" | "tiles", head: boolean) =>
+    cache.get(head ? "↗" : "/", "red", head, 2, 3, 0.6, 0, style);
+  const asciiHead = get("ascii", true);
+  const asciiTail = get("ascii", false);
+  const tileHead = get("tiles", true);
+  const tileTail = get("tiles", false);
+
+  assert.notEqual(tileHead, asciiHead);
+  assert.notEqual(tileTail, asciiTail);
+
+  const creations = canvas.creations;
+
+  for (let i = 0; i < 20; i++) {
+    assert.equal(get("ascii", true), asciiHead);
+    assert.equal(get("ascii", false), asciiTail);
+    assert.equal(get("tiles", true), tileHead);
+    assert.equal(get("tiles", false), tileTail);
+  }
+
+  assert.equal(canvas.creations, creations);
+});
+
+test("same-color train tails retain their route texture without duplicating arrow sprites", (t) => {
+  fakeCanvas(t);
+  const cache = createGlyphCache();
+  const striped = cache.get(
+    "-",
+    "blue",
+    false,
+    2,
+    3,
+    0.6,
+    0,
+    "tiles",
+    "horizontal",
+  );
+  const checked = cache.get(
+    "-",
+    "blue",
+    false,
+    2,
+    3,
+    0.6,
+    0,
+    "tiles",
+    "checker",
+  );
+
+  assert.notEqual(striped, checked);
+  assert.equal(
+    cache.get("-", "blue", false, 2, 3, 0.6, 0, "tiles", "horizontal"),
+    striped,
+  );
+  assert.equal(
+    cache.get("→", "blue", true, 2, 3, 0.6, 0, "tiles", "horizontal"),
+    cache.get("→", "blue", true, 2, 3, 0.6, 0, "tiles", "checker"),
+  );
 });

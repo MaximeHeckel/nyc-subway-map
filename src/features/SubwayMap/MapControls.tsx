@@ -1,9 +1,13 @@
 import { Fragment, useState, useSyncExternalStore } from "react";
-import { ControlRenderer, DialStore, Folder, PresetManager } from "dialkit";
+import { ControlRenderer, DialStore, Folder, SelectControl } from "dialkit";
 import { CONTROL_PANEL_ID } from "./constants";
 import { RouteSelector } from "./RouteSelector";
+import { PRESET_OPTIONS, type VisualPreset } from "./presets";
+import styles from "./SubwayMap.module.css";
 
 interface MapControlsProps {
+  preset: VisualPreset;
+  onPresetChange: (preset: VisualPreset) => void;
   routes: readonly string[];
   onRoutesChange: (routes: readonly string[]) => void;
 }
@@ -14,7 +18,12 @@ const getValues = () => DialStore.getValues(CONTROL_PANEL_ID);
 const serverValues = {};
 
 /** Compose DialKit's controls so the custom multi-select shares the same panel. */
-export function MapControls({ routes, onRoutesChange }: MapControlsProps) {
+export function MapControls({
+  preset,
+  onPresetChange,
+  routes,
+  onRoutesChange,
+}: MapControlsProps) {
   const values = useSyncExternalStore(subscribe, getValues, () => serverValues);
   const [copyStatus, setCopyStatus] = useState("Copy parameters");
   const panel = DialStore.getPanel(CONTROL_PANEL_ID);
@@ -24,7 +33,7 @@ export function MapControls({ routes, onRoutesChange }: MapControlsProps) {
   async function copyParameters() {
     try {
       await navigator.clipboard.writeText(
-        JSON.stringify({ ...values, routes }, null, 2),
+        JSON.stringify({ preset, ...values, routes }, null, 2),
       );
       setCopyStatus("Parameters copied");
     } catch {
@@ -43,11 +52,18 @@ export function MapControls({ routes, onRoutesChange }: MapControlsProps) {
             open
             toolbar={
               <>
-                <PresetManager
-                  panelId={CONTROL_PANEL_ID}
-                  presets={DialStore.getPresets(CONTROL_PANEL_ID)}
-                  activePresetId={DialStore.getActivePresetId(CONTROL_PANEL_ID)}
-                />
+                <div className={styles.presetSelector}>
+                  <SelectControl
+                    label=""
+                    value={preset}
+                    options={PRESET_OPTIONS}
+                    onChange={(value) => {
+                      if (value === "preset1" || value === "preset2") {
+                        onPresetChange(value);
+                      }
+                    }}
+                  />
+                </div>
                 <button
                   type="button"
                   className="dialkit-toolbar-add dialkit-toolbar-primary"

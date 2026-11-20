@@ -1,6 +1,9 @@
 import { FONT_SCALE } from "../constants";
 import { appendSegment, glyphFont, strokeWidth } from "./glyphs";
 import { pixelRatio } from "./utils";
+import type { SubwayOptions } from "../types";
+import { appendTileArrow, appendTrackTile } from "./tileGlyphs";
+import type { TilePattern } from "./tilePatterns";
 
 const MAX_CACHED_GLYPHS = 256;
 const HEAD_SIZE_STEP = 0.25;
@@ -20,6 +23,8 @@ export function createGlyphCache() {
     zoom: number,
     glowIntensity: number,
     minimumHeadSize = 0,
+    visualStyle: SubwayOptions["visualStyle"] = "ascii",
+    tilePattern: TilePattern = "checker",
   ) {
     const intensity = glowIntensity;
     const dpr = pixelRatio();
@@ -38,7 +43,8 @@ export function createGlyphCache() {
       head && minimumHeadSize > baseSize
         ? Math.ceil(minimumHeadSize / HEAD_SIZE_STEP) * HEAD_SIZE_STEP
         : baseSize;
-    const key = `${char}:${color}:${head}:${fontSize}:${resolution}`;
+    const pattern = visualStyle === "tiles" && !head ? tilePattern : "checker";
+    const key = `${char}:${color}:${head}:${fontSize}:${resolution}:${visualStyle}:${pattern}`;
     let sprite = lightSprites.get(key);
 
     if (sprite) {
@@ -65,7 +71,17 @@ export function createGlyphCache() {
       brush.lineWidth = strokeWidth(fontSize);
       brush.lineCap = "butt";
 
-      if (head) {
+      if (visualStyle === "tiles") {
+        brush.beginPath();
+
+        if (head) {
+          appendTileArrow(brush, char, size / 2, size / 2, fontSize * 0.7);
+        } else {
+          appendTrackTile(brush, size / 2, size / 2, fontSize * 0.7, pattern);
+        }
+
+        brush.fill();
+      } else if (head) {
         brush.fillText(char, size / 2, size / 2);
       } else {
         brush.beginPath();

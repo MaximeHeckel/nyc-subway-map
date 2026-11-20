@@ -42,12 +42,13 @@ export function createBloom() {
       panY: number,
       revision: string,
       strength: number,
+      filled = false,
     ) {
       if (strength <= 0) {
         return;
       }
 
-      const key = `${revision}:${width}:${height}:${zoom}:${panX}:${panY}:${lineWidth}:${strength}`;
+      const key = `${revision}:${width}:${height}:${zoom}:${panX}:${panY}:${lineWidth}:${strength}:${filled}`;
 
       if (key !== trackKey) {
         trackKey = key;
@@ -68,8 +69,13 @@ export function createBloom() {
         trackBrush.lineCap = "butt";
 
         for (const [color, path] of paths) {
-          trackBrush.strokeStyle = color;
-          trackBrush.stroke(path);
+          if (filled) {
+            trackBrush.fillStyle = color;
+            trackBrush.fill(path);
+          } else {
+            trackBrush.strokeStyle = color;
+            trackBrush.stroke(path);
+          }
         }
       }
 

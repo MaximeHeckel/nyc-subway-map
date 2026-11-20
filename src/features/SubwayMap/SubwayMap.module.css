@@ -30,6 +30,16 @@
   font-size: 11px;
   line-height: 1.5;
 }
+
+.presetSelector {
+  flex: 1;
+  min-width: 0;
+}
+
+.presetSelector :global(.dialkit-select-right) {
+  flex: 1;
+  justify-content: space-between;
+}
 .trainInfo div {
   display: grid;
   grid-template-columns: 44px 1fr;

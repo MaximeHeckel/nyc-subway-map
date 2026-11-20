@@ -1,6 +1,8 @@
 import { FONT_SCALE } from "../constants";
 import { glyphFont } from "./glyphs";
 import { pixelRatio } from "./utils";
+import type { SubwayOptions } from "../types";
+import { appendTrackTile } from "./tileGlyphs";
 
 interface BackdropOptions {
   width: number;
@@ -15,6 +17,7 @@ interface BackdropOptions {
   stride: number;
   occupied: Set<string>;
   revision: number;
+  visualStyle: SubwayOptions["visualStyle"];
 }
 
 /** Sparse punctuation on the same lattice as the route characters. */
@@ -39,6 +42,7 @@ export function createAsciiBackdrop() {
         stride,
         occupied,
         revision,
+        visualStyle,
       }: BackdropOptions,
     ) {
       const dpr = pixelRatio();
@@ -55,6 +59,7 @@ export function createAsciiBackdrop() {
         stride,
         cellSize,
         dpr,
+        visualStyle,
       ].join(":");
 
       if (key !== previousKey) {
@@ -66,7 +71,7 @@ export function createAsciiBackdrop() {
         brush.textAlign = "center";
         brush.textBaseline = "middle";
         brush.font = glyphFont(scale * zoom * FONT_SCALE);
-        brush.fillStyle = "#829094";
+        brush.fillStyle = visualStyle === "tiles" ? "#477a9b" : "#829094";
 
         const pitch = cellSize * scale * zoom;
 
@@ -93,6 +98,20 @@ export function createAsciiBackdrop() {
             const hash =
               (Math.imul(column, 73856093) ^ Math.imul(row, 19349663)) >>> 0;
             const choice = hash % 20;
+
+            if (visualStyle === "tiles") {
+              if (choice < 12) continue;
+
+              const x = originX + column * pitch;
+              const y = originY + row * pitch;
+              brush.globalAlpha = choice === 19 ? 0.12 : 0.045;
+              brush.fillRect(x - pitch / 2, y - pitch / 2, pitch, pitch);
+              brush.globalAlpha = 0.13;
+              brush.beginPath();
+              appendTrackTile(brush, x, y, pitch);
+              brush.fill();
+              continue;
+            }
 
             if (choice < 8) {
               continue;

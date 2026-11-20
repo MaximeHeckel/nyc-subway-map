@@ -12,6 +12,7 @@ import { createTrackLayer } from "./createTrackLayer";
 import { createViewport } from "./createViewport";
 import { bindGestures } from "./bindGestures";
 import { pixelRatio } from "./utils";
+import { getRouteTilePattern } from "./tilePatterns";
 
 /** Owns canvas resources and the render loop; React only supplies settings and data. */
 
@@ -53,6 +54,7 @@ export function createSubwayRenderer(
     point: Point,
     color: string,
     head: boolean,
+    routeId: string,
   ) {
     const { scale, zoom, offsetX, offsetY, panX, panY } = camera.view;
     const intensity = options.glow ? options.glowIntensity : 0;
@@ -66,6 +68,8 @@ export function createSubwayRenderer(
       zoom,
       intensity,
       minimumHeadSize,
+      options.visualStyle,
+      getRouteTilePattern(routeId),
     );
     const x = offsetX + point[0] * scale - sprite.size / 2;
     const y = offsetY + point[1] * scale - sprite.size / 2;
@@ -94,7 +98,7 @@ export function createSubwayRenderer(
     ctx.save();
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
-    ctx.fillStyle = "#080a0b";
+    ctx.fillStyle = options.visualStyle === "tiles" ? "#061422" : "#080a0b";
     ctx.fillRect(0, 0, width, height);
 
     asciiBackdrop.draw(ctx, {
@@ -110,12 +114,13 @@ export function createSubwayRenderer(
       stride: model.density,
       occupied: model.occupiedCells,
       revision: model.revision,
+      visualStyle: options.visualStyle,
     });
 
     ctx.translate(panX, panY);
     ctx.scale(zoom, zoom);
 
-    tracks.draw(ctx, model, camera.view);
+    tracks.draw(ctx, model, camera.view, options.visualStyle);
 
     if (options.bloom && options.bloomIntensity > 0) {
       bloom.addTracks(
@@ -126,6 +131,7 @@ export function createSubwayRenderer(
         panY,
         tracks.revision,
         options.trackBloom,
+        options.visualStyle === "tiles",
       );
     }
 
@@ -146,6 +152,7 @@ export function createSubwayRenderer(
             glyph.point,
             model.phosphor[route.id],
             glyph.isHead,
+            route.id,
           );
         }
       }
