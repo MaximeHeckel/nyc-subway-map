@@ -36,7 +36,7 @@ export const VISUAL_PRESETS = {
     glowIntensity: 0.6,
     bloom: true,
     bloomIntensity: 1.5,
-    trackBloom: 0,
+    trackBloom: 0.15,
     crt: true,
     crtIntensity: 0.35,
   },
