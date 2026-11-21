@@ -1,9 +1,9 @@
 import type { RoutePath } from "../types/transit";
 
 export const colors: Record<string, string> = {
-  1: "#ee352e",
-  2: "#ee352e",
-  3: "#ee352e",
+  1: "#ff2028",
+  2: "#ff2028",
+  3: "#ff2028",
   4: "#009b66",
   5: "#009b66",
   6: "#009b66",

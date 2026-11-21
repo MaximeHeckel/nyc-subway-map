@@ -34,7 +34,8 @@ const trains: LiveTrain[] = Object.entries(stationMap).flatMap(
 // mappings, ASCII cells, seeded trains and geometry, not just route counts.
 const baselines = {
   orthogonal: {
-    all: "e6f4a0e7866bee6d980d2da61cc3e044fa52e851b3df374865596738c7dc1e31",
+    // Updated for the brighter 1/2/3 route red.
+    all: "c76a87666ec5cbb3f1b4ba249b37a71e4518ad8c2c00058bde95d986cd3fcd70",
     A: "a048ab7555eb00a60ecead916b69c2f349f385d17f3b4696f93b570753ecb9bd",
     SIR: "947bdc581716cdf83c7af5c9784816fbf4be7514784ca2b51d70fe53267fad5f",
   },
